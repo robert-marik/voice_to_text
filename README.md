@@ -1,3 +1,5 @@
+[🇨🇿 Česky](README.md) · [🇬🇧 English](README_en.md)
+
 # 🎙️ Voice to Text
 
 > Aplikace pro Linux, která přepisuje hlas pomocí OpenAI Whisper (přes Groq API)

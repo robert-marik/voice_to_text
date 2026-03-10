@@ -1,3 +1,5 @@
+[🇨🇿 Česky](README.md) · [🇬🇧 English](README_en.md)
+
 # 🎙️ Voice to Text
 
 > A Linux systray application that transcribes your voice using OpenAI Whisper (via Groq API), with optional AI spell correction and translation — all triggered by a double-tap of the `Ctrl` key.
