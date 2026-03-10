@@ -113,7 +113,7 @@ class AppController(QObject):
     # ── Stav ikony ─────────────────────────────────────────────────────
 
     def _set_state(self, state: str) -> None:
-        self._tray.setIcon(ICONS.get(state, self._icons["idle"]))
+        self._tray.setIcon(self._icons.get(state, self._icons["idle"]))
         self._state_sig.emit(state)
 
     # ── Klavesnice ─────────────────────────────────────────────────────
