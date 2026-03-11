@@ -6,7 +6,8 @@ import time
 import random
 from .config import MAX_RECORDING_SECONDS
 from .logger import Logger
-
+import pathlib
+WAV_DIR = pathlib.Path(__file__).parent
 
 class AudioRecorder:
     def __init__(self, logger: Logger, sample_rate: int):
@@ -20,7 +21,8 @@ class AudioRecorder:
 
     def start(self) -> None:
         """Spustí externí nahrávání přes arecord."""
-        subprocess.run(["aplay", "-q", "start.wav"], stderr=subprocess.DEVNULL)
+        self.logger.log(f"Přehrávám startovní zvuk: {WAV_DIR/'sound'/'start.wav'}")
+        subprocess.run(["aplay", "-q", str(WAV_DIR/"sound"/"start.wav")], stderr=subprocess.DEVNULL)
         cmd = ["arecord", "-f", "S16_LE", "-r", str(self.sample_rate), "-c", "1", self.audio_path]
         self._process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         self.is_recording = True
@@ -45,7 +47,7 @@ class AudioRecorder:
             self._process.wait()
             self._process = None
         self.is_recording = False
-        subprocess.run(["aplay", "-q", "stop.wav"], stderr=subprocess.DEVNULL)
+        subprocess.run(["aplay", "-q", str(WAV_DIR/"sound"/"stop.wav")], stderr=subprocess.DEVNULL)
         self.logger.log("Nahrávání ukončeno.")
 
     def normalize(self) -> bool:

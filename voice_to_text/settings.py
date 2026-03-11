@@ -6,7 +6,7 @@ import json
 import os
 from dataclasses import asdict, dataclass
 
-from .config import APP_DATA_DIR, DEFAULT_LANGUAGE, DEFAULT_SAMPLE_RATE
+from .config import APP_DATA_DIR, DEFAULT_LANGUAGE, DEFAULT_SAMPLE_RATE, REMOVE_SOUND_FILES 
 
 SETTINGS_PATH = os.path.join(APP_DATA_DIR, "settings.json")
 
@@ -17,6 +17,7 @@ class Settings:
     sample_rate: int = DEFAULT_SAMPLE_RATE
     use_correction: bool = True
     translate_to_english: bool = False
+    remove_sound_files: bool = REMOVE_SOUND_FILES
 
     # ------------------------------------------------------------------ #
 

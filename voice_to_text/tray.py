@@ -14,7 +14,7 @@ from pynput import keyboard as kb
 
 from .audio import AudioRecorder
 from .clipboard import ClipboardPaster
-from .config import APP_DATA_DIR, MAX_RECORDING_SECONDS
+from .config import APP_DATA_DIR, MAX_RECORDING_SECONDS, TEMPERATURE_CORRECTION, TEMPERATURE_TRANSLATION, TEMPERATURE_TRANSCRIPTION
 from .history import TranscriptionEntry, TranscriptionHistory
 from .logger import Logger
 from .music import MusicController
@@ -78,6 +78,10 @@ class AppController(QObject):
         self._listener.start()
 
         self.logger.log("Aplikace spustena. Stiskni 2x Ctrl pro start/stop nahravani.")
+        self.logger.log(f"Max delka nahravani je nastavena na {MAX_RECORDING_SECONDS} sekund.")
+        self.logger.log(f"Teplota pro transkripci je nastavena na {TEMPERATURE_TRANSCRIPTION}.")
+        self.logger.log(f"Teplota pro korekci je nastavena na {TEMPERATURE_CORRECTION}.")
+        self.logger.log(f"Teplota pro preklad je nastavena na {TEMPERATURE_TRANSLATION}.")
 
     # ── Tray menu ──────────────────────────────────────────────────────
 
@@ -119,7 +123,7 @@ class AppController(QObject):
     # ── Klavesnice ─────────────────────────────────────────────────────
 
     def _on_key_press(self, key) -> None:
-        if key != kb.Key.ctrl:
+        if key not in (kb.Key.ctrl, kb.Key.ctrl_l, kb.Key.ctrl_r):
             return
         now = time.time()
         if now - self._last_ctrl < 0.4:
@@ -187,4 +191,11 @@ class AppController(QObject):
             )
             self._window.transcription_done.emit(entry)
             self._set_state("idle")
+            if self.settings.remove_sound_files:
+                for path in (self._recorder.audio_path, self._recorder.normalized_path):
+                    try:
+                        if os.path.exists(path):
+                            os.remove(path)
+                    except OSError:
+                        pass
             self._recorder = None

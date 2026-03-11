@@ -4,7 +4,7 @@ import time
 
 from groq import Groq
 
-from .config import WHISPER_MODEL, LLM_MODEL
+from .config import WHISPER_MODEL, LLM_MODEL, TEMPERATURE_CORRECTION, TEMPERATURE_TRANSLATION, TEMPERATURE_TRANSCRIPTION
 from .logger import Logger
 
 
@@ -22,6 +22,7 @@ class Transcriber:
                 model=WHISPER_MODEL,
                 language=language,
                 response_format="text",
+                temperature=TEMPERATURE_TRANSCRIPTION,
             )
         self.logger.log(f"Transkripce dokončena za {time.time() - start:.2f} sekund.")
         return transcription.strip()
@@ -54,6 +55,7 @@ class Transcriber:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": text},
                 ],
+                temperature=TEMPERATURE_CORRECTION,
             )
             result = completion.choices[0].message.content.strip()
             self.logger.log(f"Korekce dokončena za {time.time() - start:.2f} sekund.")
@@ -80,6 +82,7 @@ class Transcriber:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": text},
                 ],
+                temperature=TEMPERATURE_TRANSLATION,
             )
             result = completion.choices[0].message.content.strip()
             self.logger.log(f"Překlad dokončen za {time.time() - start:.2f} sekund.")

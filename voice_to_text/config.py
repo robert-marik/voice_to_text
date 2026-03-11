@@ -21,3 +21,8 @@ ICON_COLORS = {
     "recording": "red",
     "processing": "yellow",
 }
+
+TEMPERATURE_CORRECTION = 0.1
+TEMPERATURE_TRANSLATION = 0.1
+TEMPERATURE_TRANSCRIPTION = 0.0
+REMOVE_SOUND_FILES = True
