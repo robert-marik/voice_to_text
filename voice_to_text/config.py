@@ -5,6 +5,7 @@ import os
 MAX_RECORDING_SECONDS = 120
 DEFAULT_SAMPLE_RATE = 44100
 DEFAULT_LANGUAGE = "cs"
+DEFAULT_TARGET_LANGUAGE = "en"
 
 APP_DATA_DIR = os.path.join(os.path.expanduser("~"), ".local", "state", "voice_to_text")
 LOG_PATH = os.path.join(APP_DATA_DIR, "app.log")
@@ -26,3 +27,22 @@ TEMPERATURE_CORRECTION = 0.1
 TEMPERATURE_TRANSLATION = 0.1
 TEMPERATURE_TRANSCRIPTION = 0.0
 REMOVE_SOUND_FILES = True
+
+# Dostupné jazyky pro přepis a překlad
+LANGUAGES = {
+    "cs": "Čeština",
+    "en": "English",
+    "de": "Deutsch",
+    "fr": "Français",
+    "es": "Español",
+    "pl": "Polski",
+    "sk": "Slovenčina",
+}
+
+TARGET_LANGUAGES = {
+    "en": "English",
+    "cs": "Čeština",
+    "de": "Deutsch",
+    "fr": "Français",
+    "es": "Español",
+}

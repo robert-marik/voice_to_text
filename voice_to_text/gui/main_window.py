@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import os
 import subprocess
 from typing import TYPE_CHECKING
 
@@ -9,6 +11,7 @@ from PySide6.QtCore import Qt, QTimer, Signal, Slot
 from PySide6.QtGui import QColor, QFont, QIcon, QPalette, QTextCursor
 from PySide6.QtWidgets import (
     QApplication,
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -119,11 +122,16 @@ class MainWindow(QMainWindow):
         self._btn_settings.setCursor(Qt.CursorShape.PointingHandCursor)
         self._btn_settings.clicked.connect(self._open_settings)
 
+        self._btn_export = QPushButton("💾  Exportovat historii")
+        self._btn_export.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_export.clicked.connect(self._export_history)
+
         self._btn_clear = QPushButton("🗑  Smazat historii")
         self._btn_clear.setCursor(Qt.CursorShape.PointingHandCursor)
         self._btn_clear.clicked.connect(self._clear_history)
 
         toolbar.addWidget(self._btn_settings)
+        toolbar.addWidget(self._btn_export)
         toolbar.addWidget(self._btn_clear)
         self.addToolBar(toolbar)
 
@@ -276,6 +284,45 @@ class MainWindow(QMainWindow):
             self._meta_label.setText("")
             self._current_entry = None
 
+    def _export_history(self) -> None:
+        """Exportuje historii přepisů do CSV nebo TXT souboru."""
+        entries = self.history.all()
+        if not entries:
+            QMessageBox.information(self, "Export", "Historie je prázdná – není co exportovat.")
+            return
+
+        path, selected_filter = QFileDialog.getSaveFileName(
+            self,
+            "Exportovat historii",
+            os.path.expanduser("~/voice_to_text_history.csv"),
+            "CSV soubor (*.csv);;Textový soubor (*.txt)",
+        )
+        if not path:
+            return
+
+        try:
+            if path.endswith(".txt"):
+                with open(path, "w", encoding="utf-8") as f:
+                    for entry in entries:
+                        f.write(f"=== {entry.display_time} | {entry.language} | {entry.duration_s:.1f}s ===\n")
+                        f.write(entry.final_text)
+                        f.write("\n\n")
+            else:
+                with open(path, "w", encoding="utf-8", newline="") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["Čas", "Jazyk", "Délka (s)", "Opravený text", "Původní přepis"])
+                    for entry in entries:
+                        writer.writerow([
+                            entry.display_time,
+                            entry.language,
+                            entry.duration_s,
+                            entry.corrected,
+                            entry.raw,
+                        ])
+            QMessageBox.information(self, "Export", f"Historie exportována do:\n{path}")
+        except Exception as e:
+            QMessageBox.critical(self, "Chyba exportu", str(e))
+
     def _open_settings(self) -> None:
         from .settings_dialog import SettingsDialog
         dialog = SettingsDialog(self.settings, parent=self)
@@ -303,3 +350,4 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         event.ignore()
         self.hide()
+

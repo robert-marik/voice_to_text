@@ -4,15 +4,17 @@ import os
 import subprocess
 import time
 import random
-from .config import MAX_RECORDING_SECONDS
 from .logger import Logger
 import pathlib
+
 WAV_DIR = pathlib.Path(__file__).parent
 
+
 class AudioRecorder:
-    def __init__(self, logger: Logger, sample_rate: int):
+    def __init__(self, logger: Logger, sample_rate: int, max_recording_seconds: int = 120):
         self.logger = logger
         self.sample_rate = sample_rate
+        self.max_recording_seconds = max_recording_seconds
         random_number = random.randint(10000, 99999)
         self.audio_path = f"/tmp/voice_input_{random_number}.wav"
         self.normalized_path = self.audio_path.replace(".wav", "_norm.opus")
@@ -20,9 +22,13 @@ class AudioRecorder:
         self.is_recording = False
 
     def start(self) -> None:
-        """Spustí externí nahrávání přes arecord."""
-        self.logger.log(f"Přehrávám startovní zvuk: {WAV_DIR/'sound'/'start.wav'}")
-        subprocess.run(["aplay", "-q", str(WAV_DIR/"sound"/"start.wav")], stderr=subprocess.DEVNULL)
+        """Spustí externí nahrávání přes arecord. Startovní zvuk hraje asynchronně."""
+        self.logger.log(f"Přehrávám startovní zvuk: {WAV_DIR / 'sound' / 'start.wav'}")
+        # Neblokující přehrávání – nezdržuje start nahrávání
+        subprocess.Popen(
+            ["aplay", "-q", str(WAV_DIR / "sound" / "start.wav")],
+            stderr=subprocess.DEVNULL,
+        )
         cmd = ["arecord", "-f", "S16_LE", "-r", str(self.sample_rate), "-c", "1", self.audio_path]
         self._process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         self.is_recording = True
@@ -33,8 +39,10 @@ class AudioRecorder:
         start_time = time.time()
         while stop_flag_fn():
             time.sleep(0.1)
-            if time.time() - start_time >= MAX_RECORDING_SECONDS:
-                self.logger.log(f"⚠️ Timeout: nahrávání automaticky ukončeno po {MAX_RECORDING_SECONDS}s.")
+            if time.time() - start_time >= self.max_recording_seconds:
+                self.logger.log(
+                    f"⚠️ Timeout: nahrávání automaticky ukončeno po {self.max_recording_seconds}s."
+                )
                 self.is_recording = False
                 if on_timeout_fn:
                     on_timeout_fn()
@@ -47,25 +55,43 @@ class AudioRecorder:
             self._process.wait()
             self._process = None
         self.is_recording = False
-        subprocess.run(["aplay", "-q", str(WAV_DIR/"sound"/"stop.wav")], stderr=subprocess.DEVNULL)
+        # Neblokující přehrávání stop zvuku
+        subprocess.Popen(
+            ["aplay", "-q", str(WAV_DIR / "sound" / "stop.wav")],
+            stderr=subprocess.DEVNULL,
+        )
         self.logger.log("Nahrávání ukončeno.")
 
     def normalize(self) -> bool:
         """Normalizuje hlasitost a převede soubor do opus formátu přes ffmpeg.
-        
+
         Vrací True při úspěchu, False při chybě.
         """
         self.logger.log(f"Normalizuji hlasitost přes ffmpeg do {self.normalized_path} ...")
         start = time.time()
-        result = subprocess.run([
-            "ffmpeg", "-y", "-i", self.audio_path,
-            "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
-            "-ar", "16000", "-c:a", "libopus", "-b:a", "32k",
-            self.normalized_path,
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        result = subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", self.audio_path,
+                "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
+                "-ar", "16000", "-c:a", "libopus", "-b:a", "32k",
+                self.normalized_path,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         self.logger.log(f"Normalizace dokončena za {time.time() - start:.2f} sekund.")
         if os.path.exists(self.audio_path) and os.path.exists(self.normalized_path):
             orig_kb = os.path.getsize(self.audio_path) / 1024
             norm_kb = os.path.getsize(self.normalized_path) / 1024
             self.logger.log(f"Původní: {orig_kb:.2f} KB → Normalizovaný: {norm_kb:.2f} KB")
         return result.returncode == 0 and os.path.exists(self.normalized_path)
+
+    def cleanup(self) -> None:
+        """Smaže dočasné soubory – vždy bezpečně, bez ohledu na nastavení."""
+        for path in (self.audio_path, self.normalized_path):
+            try:
+                if os.path.exists(path):
+                    os.remove(path)
+            except OSError:
+                pass
+
