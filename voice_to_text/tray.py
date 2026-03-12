@@ -203,10 +203,16 @@ class AppController(QObject):
 
             text_to_paste = raw_text
             if self.settings.use_correction:
-                text_to_paste = self.transcriber.correct(raw_text, self.settings.language)
+                text_to_paste = self.transcriber.correct(
+                    raw_text,
+                    self.settings.language,
+                    custom_prompt=self.settings.get_correction_prompt(self.settings.language),
+                )
             if self.settings.translate_to_english:
                 text_to_paste = self.transcriber.translate(
-                    text_to_paste, self.settings.target_language
+                    text_to_paste,
+                    self.settings.target_language,
+                    custom_prompt=self.settings.get_translation_prompt(self.settings.target_language),
                 )
             self.paster.paste(text_to_paste)
 
